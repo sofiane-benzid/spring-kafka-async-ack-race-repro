@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>example</groupId>
+	<artifactId>spring-kafka-async-ack-race-repro</artifactId>
+	<version>1.0.0</version>
+	<description>Reproducer: async acks + blocking retries can leave a partition paused forever</description>
+
+	<properties>
+		<maven.compiler.release>21</maven.compiler.release>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<!-- override with -Dspring-kafka.version=4.1.2-SNAPSHOT etc. -->
+		<spring-kafka.version>4.1.1</spring-kafka.version>
+		<junit.version>6.0.3</junit.version>
+		<logback.version>1.5.18</logback.version>
+		<!-- reproducer knobs (defaults tuned to hit the race; override with -Drepro.x=...) -->
+		<repro.poolMax>1</repro.poolMax>
+		<repro.taskMs>95</repro.taskMs>
+		<repro.taskJitter>12</repro.taskJitter>
+		<repro.rate>300</repro.rate>
+		<repro.minutes>15</repro.minutes>
+		<repro.backOffMs>100</repro.backOffMs>
+		<repro.stallSeconds>30</repro.stallSeconds>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.junit</groupId>
+				<artifactId>junit-bom</artifactId>
+				<version>${junit.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+			<version>${spring-kafka.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka-test</artifactId>
+			<version>${spring-kafka.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>${logback.version}</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<repositories>
+		<!-- only needed when testing a -SNAPSHOT build of spring-kafka -->
+		<repository>
+			<id>spring-snapshots</id>
+			<url>https://repo.spring.io/snapshot</url>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
+		</repository>
+	</repositories>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.5.4</version>
+				<configuration>
+					<!-- lets the test read LinkedList internals for the state dump -->
+					<argLine>--add-opens java.base/java.util=ALL-UNNAMED</argLine>
+					<trimStackTrace>false</trimStackTrace>
+					<systemPropertyVariables>
+						<repro.poolMax>${repro.poolMax}</repro.poolMax>
+						<repro.taskMs>${repro.taskMs}</repro.taskMs>
+						<repro.taskJitter>${repro.taskJitter}</repro.taskJitter>
+						<repro.rate>${repro.rate}</repro.rate>
+						<repro.minutes>${repro.minutes}</repro.minutes>
+						<repro.backOffMs>${repro.backOffMs}</repro.backOffMs>
+						<repro.stallSeconds>${repro.stallSeconds}</repro.stallSeconds>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>

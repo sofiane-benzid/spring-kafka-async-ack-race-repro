@@ -1,0 +1,14 @@
+<configuration>
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
+		</encoder>
+	</appender>
+	<!-- Keep logging quiet: per-record logging slows the threads down enough to hide the race. -->
+	<logger name="org.apache.kafka" level="ERROR"/>
+	<logger name="kafka" level="ERROR"/>
+	<logger name="org.springframework.kafka" level="WARN"/>
+	<root level="WARN">
+		<appender-ref ref="STDOUT"/>
+	</root>
+</configuration>
