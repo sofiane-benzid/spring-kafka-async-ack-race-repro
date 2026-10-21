@@ -1,0 +1,38 @@
+name: repro
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "How long to run the embedded-Kafka test"
+        default: "15"
+
+jobs:
+  model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Race model (no dependencies)
+        working-directory: model
+        run: |
+          javac LinkedListRaceModel.java
+          java LinkedListRaceModel unsync 300000
+          java LinkedListRaceModel sync 300000
+
+  embedded-kafka:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Reproducer on spring-kafka 4.1.1
+        run: mvn -B test -Drepro.minutes=${{ github.event.inputs.minutes || '15' }}
